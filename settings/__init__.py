@@ -7,11 +7,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class Settings(BaseSettings):
     # DB
-    DB_USERNAME: str = "postgres"
-    DB_PASSWORD: str = "root"
+    DB_USERNAME: str = "hr_user"
+    DB_PASSWORD: str = "hfw"
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 5432
-    DB_NAME: str = "hr_system"
+    DB_NAME: str = "hr_db"
 
     @computed_field
     @property

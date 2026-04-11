@@ -56,10 +56,10 @@ class UserModel(BaseModel):
         return self._password
 
     @password.setter
-    def password(self, password):
+    def password(self, password) -> None:
         self._password = password_hasher.hash(password)
 
-    def check_password(self, password):
+    def check_password(self, password) -> bool:
         return password_hasher.verify(password, self._password)
 
 

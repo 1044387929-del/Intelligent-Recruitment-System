@@ -52,6 +52,7 @@ class Base(DeclarativeBase):
 
 
 class BaseModel(Base):
+    # __abstract__ = True 表示这个类是一个抽象类，不会被直接实例化，只能被继承
     __abstract__ = True
 
     id: Mapped[str] = mapped_column(String(100), primary_key=True, default=lambda: uuid())
@@ -59,3 +60,8 @@ class BaseModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now, onupdate=datetime.now
     )
+
+from . import user
+from . import candidate
+from . import interview
+from . import position
