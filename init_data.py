@@ -24,9 +24,11 @@ async def init_department():
             for department_dict in department_dict_list:
                 await department_repo.create_department(department_dict)
         print("部门初始化完成")
-    
+
+# 没有这一层，里面就不能合法地写 await / async with（在普通 def 里用会语法或设计都不对）。
 async def init_user():
     async with AsyncSessionFactory() as session:
+        # 在 SQLAlchemy 里，session.begin() 表示：开一笔数据库事务（transaction）。
         async with session.begin():
             user_repo = UserRepo(session)
             department_repo = DepartmentRepo(session)
@@ -110,7 +112,7 @@ async def init_user():
                 await user_repo.create_user(user_dict)
             print("用户初始化完成！")
 
-async def main():
+async def main() -> None:
     await init_department()
     await init_user()
 

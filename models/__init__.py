@@ -27,15 +27,26 @@ engine = create_async_engine(
     pool_pre_ping=True,
 )
 
+# ——————————————————————————————————————————————————————————————————————————————————
+# 这段代码是在造一个「异步数据库会话工厂」，名字是 AsyncSessionFactory。
+# 以后你要访问数据库时，不是自己去 new 一个连接，
+# 而是通过这个工厂拿一个「会话」（Session），在会话里执行查询、增删改。
+# ————————————————————————————————————————————————————————————————————————————————————————
+
 # 创建异步会话工厂
 AsyncSessionFactory = sessionmaker(
     # Engine或者其子类对象（这里是AsyncEngine）
+    # 决定了连接哪个数据库
     bind=engine,
     # Session类的代替（默认是Session类）
+    # 创建异步会话，不是同步会话
     class_=AsyncSession,
     # 是否在查找之前执行flush操作（默认是True）
+    # 在真正去数据库查之前，先把当前会话里已改、
+    # 未提交的改动「刷」一下，避免你刚 add 了一条记录，紧接着 query 却查不到
     autoflush=True,
     # 是否在执行commit操作后Session就过期（默认是True）
+    # 提交之后，当前会话里的对象还能继续读属性，不会因为 commit 就立刻失效。
     expire_on_commit=False
 )
 
