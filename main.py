@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from . import models
+# from . import models
 from routers.user_router import router as user_router
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 app = FastAPI()
 
@@ -10,7 +11,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
     allow_credentials=True,
-    allow_metheds=['*'],
+    allow_methods=['*'],
     allow_headers=['*']
 )
 
@@ -24,5 +25,7 @@ async def root():
 async def say_hello(name: str):
     return {"message": f"Hello {name}"}
 
-# if __name__ == "__main__":
-    # uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

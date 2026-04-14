@@ -44,7 +44,7 @@ async def init_user():
             users_dict_list = [
                 {
                     "username": "Boss",
-                    "password": "111111",
+                    "password": "hfw123456",
                     "email": "boss@qq.com",
                     "realname": "黄老板",
                     "is_superuser": True,
