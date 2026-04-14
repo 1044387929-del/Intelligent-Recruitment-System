@@ -92,6 +92,7 @@ class AuthHandler(metaclass=SingletonMeta):
             raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail='Refresh Token不可用！')
 
     def auth_access_dependency(self, auth: HTTPAuthorizationCredentials = Security(security)):
+        # 获取access token
         return self.decode_access_token(auth.credentials)
 
     def auth_refresh_dependency(self, auth: HTTPAuthorizationCredentials = Security(security)):
