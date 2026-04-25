@@ -17,6 +17,7 @@ dependencies = [
     "pyjwt>=2.12.1",
     "redis>=7.4.0",
     "fastapi-cache2[redis]>=0.1.8",
+    "fastapi-mail>=1.6.2",
 ]
 
 [[tool.uv.index]]
