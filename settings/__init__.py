@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
 
     # 邀请码过期时间
-    INVITE_CODE_EXPIRE = 60 * 60 * 24 * 2
+    INVITE_CODE_EXPIRE: int = 60 * 60 * 24 * 2
 
     @computed_field
     @property
