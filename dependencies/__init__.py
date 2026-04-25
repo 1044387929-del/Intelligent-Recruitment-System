@@ -3,6 +3,7 @@ from core.auth import AuthHandler
 from fastapi import Depends, HTTPException, status
 from repository.user_repo import UserRepo
 from models.user import UserModel
+from core.cache import HRCache
 
 auth_handler = AuthHandler()
 
@@ -40,3 +41,5 @@ async def get_super_user(
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足，无法访问！")
 
+def get_cache_instance():
+    return HRCache()
