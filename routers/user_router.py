@@ -154,7 +154,10 @@ async def register(
     # 1. 校验邮箱和邀请码是否正确
     invite_info: InviteInfoSchema = await cache.get_invite_info(str(email))
     if not invite_info:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱账号不存在！")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="邀请已失效或该邮箱尚未被邀请，请先完成邀请流程。",
+        )
     if invite_info.invite_code != register_data.invite_code:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="邀请码错误！")
     

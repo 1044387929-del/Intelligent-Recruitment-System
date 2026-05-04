@@ -46,15 +46,17 @@ class HRCache(metaclass=SingletonMeta):
         """
         设置邀请码缓存
         """
-        key = f"{self.invite_prefix}{invite_info.email}"
-        await self.cache_backend.set(key, invite_info.model_dump_json(), expire=settings.INVITE_CODE_EXPIRE)
+        await self.set(
+            str(invite_info.email),
+            invite_info.model_dump_json(),
+            settings.INVITE_CODE_EXPIRE,
+        )
 
     async def get_invite_info(self, email: str) -> Optional[InviteInfoSchema]:
         """
         获取邀请码缓存
         """
-        key = f"{self.invite_prefix}{email}"
-        invite_info = await self.get(key)
+        invite_info = await self.get(str(email))
         if invite_info is not None:
             # model_validate_json 会自动将json转换为Pydantic模型
             invite_info = InviteInfoSchema.model_validate_json(invite_info)
