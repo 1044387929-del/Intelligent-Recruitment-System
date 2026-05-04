@@ -25,13 +25,19 @@ class HRCache(metaclass=SingletonMeta):
 
     async def set(self, key, value, ex) -> None:
         """
-        设置缓存
+        设置缓存。
+
+        key 为「逻辑键」（不含前缀），真实 Redis 键为 invite_prefix + key。
+        邀请场景下 key 应传邮箱字符串，最终键名为 invite:{邮箱}。
         """
         await self.cache_backend.set(self.invite_prefix + key, value, expire=ex)
     
     async def get(self, key) -> Optional[str]:
         """
-        获取缓存
+        获取缓存。
+
+        与 set 对称：同样只传逻辑键，内部统一拼一次 invite_prefix。
+        切勿在调用方先拼好 "invite:xxx" 再传入，否则会变成 invite:invite:xxx，读写对不上。
         """
         value = await self.cache_backend.get(self.invite_prefix + key)
         return value
@@ -44,7 +50,10 @@ class HRCache(metaclass=SingletonMeta):
     
     async def set_invite_info(self, invite_info: InviteInfoSchema):
         """
-        设置邀请码缓存
+        设置邀请码缓存。
+
+        与 get_invite_info 保持一致：都通过 set/get，且第一参数仅为邮箱字符串，
+        保证 Redis 键始终为 invite:{邮箱}（前缀只加一次）。
         """
         await self.set(
             str(invite_info.email),
@@ -54,7 +63,10 @@ class HRCache(metaclass=SingletonMeta):
 
     async def get_invite_info(self, email: str) -> Optional[InviteInfoSchema]:
         """
-        获取邀请码缓存
+        获取邀请码缓存。
+
+        必须与 set_invite_info 使用相同的逻辑键（邮箱），并同样走 self.get，
+        才能命中 set_invite_info 写入的同一条记录。
         """
         invite_info = await self.get(str(email))
         if invite_info is not None:
