@@ -43,3 +43,11 @@ async def get_super_user(
 
 def get_cache_instance():
     return HRCache()
+
+def get_super_user(
+    current_user: UserModel = Depends(get_current_user)
+) -> UserModel:
+    if current_user.is_superuser:
+        return current_user
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="权限不足，无法访问！")

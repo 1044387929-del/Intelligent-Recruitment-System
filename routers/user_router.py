@@ -4,9 +4,13 @@ import string
 from fastapi import APIRouter, Depends, status, BackgroundTasks
 from pydantic import EmailStr
 from core.mail import create_mail_instance
-from schemas.user_schema import UserLoginSchema
+from schemas.user_schema import UserListRespSchema, UserLoginSchema
 from schemas import ResponseSchema
-from dependencies import get_session_instance, get_auth_handler
+from dependencies import (
+    get_session_instance, 
+    get_auth_handler, 
+    get_super_user
+)
 from models import AsyncSession
 from models.user import UserModel
 from repository.user_repo import UserRepo
@@ -150,6 +154,17 @@ async def register(
     session: AsyncSession = Depends(get_session_instance),
     cache: HRCache = Depends(get_cache_instance),
 ):
+    """
+    注册用户
+    Args:
+        register_data: 注册数据
+        session: 数据库会话
+        cache: 缓存实例
+    Returns:
+        ResponseSchema: 响应数据
+    Raises:
+        HTTPException: 注册失败
+    """
     email = register_data.email
     # 1. 校验邮箱和邀请码是否正确
     invite_info: InviteInfoSchema = await cache.get_invite_info(str(email))
@@ -176,3 +191,29 @@ async def register(
             "department_id": invite_info.department_id,
         })
     return ResponseSchema()
+
+@router.get("/list", summary="获取用户列表", response_model=UserListRespSchema)
+async def user_list(
+    page: int = 1,
+    size: int = 3,
+    department_id: str | None= None,
+    _: UserModel = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session_instance),
+):
+    """
+    获取用户列表
+    Args:
+        page: 页码
+        size: 每页条数
+        department_id: 部门ID
+        _: 当前用户
+        session: 数据库会话
+    Returns:
+        UserListRespSchema: 用户列表响应数据
+    """
+    async with session.begin():
+        user_repo = UserRepo(session)
+        users = await user_repo.get_user_list(page=page, size=size, department_id=department_id)
+    return {
+        "users": users
+    }

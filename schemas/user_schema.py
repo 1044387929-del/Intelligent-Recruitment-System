@@ -5,7 +5,7 @@ import re
 from sqlalchemy import desc
 from sqlalchemy.orm import descriptor_props
 from models.user import UserStatus
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 # from models.user import UserStatus
 
@@ -74,3 +74,6 @@ class UserRegisterSchema(BaseModel):
     username: str = Field(..., description="用户名")
     realname: str = Field(..., description="真实姓名")
     password: str = Field(..., min_length=6, max_length=20, description="密码")
+
+class UserListRespSchema(BaseModel):
+    users: List[UserSchema]
