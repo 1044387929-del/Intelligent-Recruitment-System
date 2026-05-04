@@ -2,6 +2,7 @@ import random
 from aiosmtplib import SMTPResponseException
 import string
 from fastapi import APIRouter, Depends, status, BackgroundTasks
+from pydantic import EmailStr
 from core.mail import create_mail_instance
 from schemas.user_schema import UserLoginSchema
 from schemas import ResponseSchema
@@ -11,7 +12,7 @@ from models.user import UserModel
 from repository.user_repo import UserRepo
 from fastapi.exceptions import HTTPException
 from core.auth import AuthHandler
-from schemas.user_schema import UserLoginRespSchema, UserInviteSchema
+from schemas.user_schema import UserLoginRespSchema, UserInviteSchema, UserRegisterSchema
 from core.cache import HRCache, InviteInfoSchema
 from repository.user_repo import DepartmentRepo
 from dependencies import (
@@ -128,7 +129,7 @@ async def invite_user(
         if not department:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='该部门不存在')
     
-    # 生成邀请码
+    # 生成邀请码，随机六位整数
     invite_code: str = "".join(random.sample(string.digits, 6))
 
     # 将邀请信息保存在缓存中
@@ -141,4 +142,34 @@ async def invite_user(
         invite_code=invite_code
     )
 
+    return ResponseSchema()
+
+@router.post("/register", summary="注册")
+async def register(
+    register_data: UserRegisterSchema,
+    session: AsyncSession = Depends(get_session_instance),
+    cache: HRCache = Depends(get_cache_instance),
+):
+    email = register_data.email
+    # 1. 校验邮箱和邀请码是否正确
+    invite_info: InviteInfoSchema = await cache.get_invite_info(str(email))
+    if not invite_info:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱账号不存在！")
+    if invite_info.invite_code != register_data.invite_code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="邀请码错误！")
+    
+    async with session.begin():
+        # 3. 校验邮箱是否已经注册
+        user_repo = UserRepo(session)
+        user: UserModel = await user_repo.get_by_email(str(email))
+        if user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="改邮箱已经被注册！")
+        # 4. 创建用户
+        await user_repo.create_user({
+            "email": email,
+            "username": register_data.username,
+            "realname": register_data.realname,
+            "password": register_data.password,
+            "department_id": invite_info.department_id,
+        })
     return ResponseSchema()

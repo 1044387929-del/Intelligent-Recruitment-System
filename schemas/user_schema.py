@@ -1,6 +1,9 @@
 from dataclasses import field
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 import re
+
+from sqlalchemy import desc
+from sqlalchemy.orm import descriptor_props
 from models.user import UserStatus
 from typing import Optional
 from datetime import datetime
@@ -64,4 +67,10 @@ class UserInviteSchema(BaseModel):
     """
     email: EmailStr = Field(..., description="邮箱账号")
     department_id: str = Field(..., description="部门ID")
-    
+
+class UserRegisterSchema(BaseModel):
+    email: EmailStr = Field(..., description="邮箱")
+    invite_code: str = Field(..., min_length=6, max_length=6, description='邀请码')
+    username: str = Field(..., description="用户名")
+    realname: str = Field(..., description="真实姓名")
+    password: str = Field(..., min_length=6, max_length=20, description="密码")
