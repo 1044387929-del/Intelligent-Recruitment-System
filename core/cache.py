@@ -27,7 +27,7 @@ class HRCache(metaclass=SingletonMeta):
         """
         设置缓存
         """
-        await self.cache_backend.set(self.invite_prefix + key, value, ex)
+        await self.cache_backend.set(self.invite_prefix + key, value, expire=ex)
     
     async def get(self, key) -> Optional[str]:
         """
@@ -47,7 +47,7 @@ class HRCache(metaclass=SingletonMeta):
         设置邀请码缓存
         """
         key = f"{self.invite_prefix}{invite_info.email}"
-        await self.cache_backend.set(key, invite_info.model_dump_json(), expires=settings.INVITE_CODE_EXPIRE)
+        await self.cache_backend.set(key, invite_info.model_dump_json(), expire=settings.INVITE_CODE_EXPIRE)
 
     async def get_invite_info(self, email: str) -> Optional[InviteInfoSchema]:
         """

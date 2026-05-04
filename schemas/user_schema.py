@@ -57,3 +57,11 @@ class UserLoginRespSchema(BaseModel):
     access_token: str = Field(..., description="access_token")
     refresh_token: str = Field(..., description="refresh_token")
     user: UserSchema = Field(..., description="user")
+
+class UserInviteSchema(BaseModel):
+    """
+    邀请用户信息
+    """
+    email: EmailStr = Field(..., description="邮箱账号")
+    department_id: str = Field(..., description="部门ID")
+    
