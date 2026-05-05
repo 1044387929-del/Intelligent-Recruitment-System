@@ -77,3 +77,11 @@ class UserRegisterSchema(BaseModel):
 
 class UserListRespSchema(BaseModel):
     users: List[UserSchema]
+
+class UserStatusUpdateSchema(BaseModel):
+    user_id: str = Field(..., description="用户ID")
+    status: UserStatus = Field(..., description="用户状态")
+
+class UserStatusUpdateRespSchema(BaseModel):
+    user_id: str = Field(..., description="用户ID")
+    status: UserStatus = Field(..., description="用户状态")

@@ -4,7 +4,7 @@ import string
 from fastapi import APIRouter, Depends, status, BackgroundTasks
 from pydantic import EmailStr
 from core.mail import create_mail_instance
-from schemas.user_schema import UserListRespSchema, UserLoginSchema
+from schemas.user_schema import UserListRespSchema, UserLoginSchema, UserStatusUpdateSchema
 from schemas import ResponseSchema
 from dependencies import (
     get_session_instance, 
@@ -12,7 +12,7 @@ from dependencies import (
     get_super_user
 )
 from models import AsyncSession
-from models.user import UserModel
+from models.user import UserModel, UserStatus
 from repository.user_repo import UserRepo
 from fastapi.exceptions import HTTPException
 from core.auth import AuthHandler
@@ -82,7 +82,9 @@ async def login(
         # 验证密码是否正确
         if not user.check_password(login_data.password):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="该用户不存在")
-        
+        # 判断员工状态
+        if user.status == UserStatus.BLOCKED:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="该用户已被禁用")
         # 生成jwt token
         tokens = auth_handler.encode_login_token(user.id)
         return {
@@ -217,3 +219,27 @@ async def user_list(
     return {
         "users": users
     }
+
+@router.patch("/status/update", summary="修改用户状态",
+response_model=ResponseSchema)
+async def update_user_status(
+    status_data: UserStatusUpdateSchema,
+    session: AsyncSession = Depends(get_session_instance),
+    super_user: UserModel = Depends(get_super_user),
+):
+    """
+    修改用户状态
+    Args:
+        user_id: 用户ID
+        status: 用户状态
+        session: 数据库会话
+    """
+    async with session.begin():
+        user_repo = UserRepo(session)
+        user: UserModel = await user_repo.get_by_id(status_data.user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="用户不存在")
+        if user.is_superuser:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="超级用户不能被修改状态")
+        user.status = status_data.status
+    return ResponseSchema()
