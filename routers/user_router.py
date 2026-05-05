@@ -4,12 +4,13 @@ import string
 from fastapi import APIRouter, Depends, status, BackgroundTasks
 from pydantic import EmailStr
 from core.mail import create_mail_instance
-from schemas.user_schema import UserListRespSchema, UserLoginSchema, UserStatusUpdateSchema
+from schemas.user_schema import DepartmentListRespSchema, UserListRespSchema, UserLoginSchema, UserStatusUpdateSchema
 from schemas import ResponseSchema
 from dependencies import (
     get_session_instance, 
     get_auth_handler, 
-    get_super_user
+    get_super_user,
+    get_user_id
 )
 from models import AsyncSession
 from models.user import UserModel, UserStatus
@@ -243,3 +244,23 @@ async def update_user_status(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="超级用户不能被修改状态")
         user.status = status_data.status
     return ResponseSchema()
+
+@router.get('/department/list', summary='获取部门列表', response_model=DepartmentListRespSchema)
+async def department_list(
+    session: AsyncSession = Depends(get_session_instance),
+    _: str = Depends(get_current_user),
+):
+    """
+    获取部门列表
+    Args:
+        session: 数据库会话
+        _: 当前用户
+    Returns:
+        DepartmentListRespSchema: 部门列表响应数据
+    """
+    async with session.begin():
+        department_repo = DepartmentRepo(session)
+        departments = await department_repo.get_department_list()
+        return {
+            "departments": departments
+        }

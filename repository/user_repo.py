@@ -1,3 +1,7 @@
+# 用户仓库（Repo）层：封装了对UserModel及相关模型（如DepartmentModel、
+# DingdingUserModel）的数据库操作，包括用户的增、查、列表、
+# 与钉钉用户等信息的管理，供上层服务或路由调用。
+
 from multiprocessing import Value
 from sqlalchemy import select, exists
 from . import BaseRepo
@@ -74,3 +78,8 @@ class DepartmentRepo(BaseRepo):
     
     async def delete_department(self, department_id: str):
         return await self.session.delete(DepartmentModel(id=department_id))
+
+    async def get_department_list(self) -> List[DepartmentModel]:
+        stmt = select(DepartmentModel)
+        departments = await self.session.scalars(stmt)
+        return departments.all()
