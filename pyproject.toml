@@ -19,6 +19,7 @@ dependencies = [
     "fastapi-cache2[redis]==0.2.2",
     "fastapi-mail>=1.6.2",
     "loguru>=0.7.3",
+    "pyngrok>=8.1.2",
 ]
 
 [dependency-groups]

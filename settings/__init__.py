@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     ## 邮箱是否启用SSL
     MAIL_SSL_TLS: bool = False
 
+    # 钉钉相关配置
+    DINGTALK_APP_KEY: str = Field(..., validation_alias="DINGTALK_APP_KEY")
+    DINGTALK_APP_SECRET: str = Field(..., validation_alias="DINGTALK_APP_SECRET")
+
+    # 前端喝后端的域名
+    BACKEND_BASE_URL: str = "https://unlecherously-unrenovative-pok.ngrok-free.dev"
+
     @computed_field
     @property
     def DATABASE_URL(self) -> str:

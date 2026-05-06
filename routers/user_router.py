@@ -26,6 +26,8 @@ from dependencies import (
 )
 from fastapi_mail import FastMail, MessageSchema
 from loguru import logger
+from settings import settings
+from urllib.parse import urlencode, urljoin
 
 
 # 通过docs访问的时候，对API进行分组
@@ -227,7 +229,7 @@ async def update_user_status(
     status_data: UserStatusUpdateSchema,
     session: AsyncSession = Depends(get_session_instance),
     super_user: UserModel = Depends(get_super_user),
-):
+) -> ResponseSchema:
     """
     修改用户状态
     Args:
@@ -264,3 +266,40 @@ async def department_list(
         return {
             "departments": departments
         }
+    
+@router.get('/dingtalk/authorize', summary='钉钉授权')
+async def dingtalk_authorize(
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    钉钉授权
+    Args:
+        current_user: 当前用户
+    Returns:
+        dict: 授权URL
+    """
+
+    # redirect_url 必须是公网能直接访问的地址
+    redirect_url = urljoin(settings.BACKEND_BASE_URL, r"/user/dingtalk/callback")
+    params = {
+        "redirect_uri": redirect_url,
+        "response_type": "code",
+        "client_id": settings.DINGTALK_APP_KEY,
+        "scope": "openid",
+        "state": current_user.id,
+        "prompt": "consent",
+    }
+    
+    authorize_url = f"https://login.dingtalk.com/oauth2/auth?{urlencode(params)}"
+    return {
+        "authorize_url": authorize_url
+    }
+
+@router.get('/dingtalk/callback', summary='钉钉回调')
+async def dingtalk_callback(
+    state: str,
+    code: str | None = None,
+    authCode: str | None = None,
+    session: AsyncSession = Depends(get_session_instance),
+):
+    # 
