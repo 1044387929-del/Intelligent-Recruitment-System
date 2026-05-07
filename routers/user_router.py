@@ -1,7 +1,7 @@
 import random
 from aiosmtplib import SMTPResponseException
 import string
-from fastapi import APIRouter, Depends, status, BackgroundTasks
+from fastapi import APIRouter, Depends, Request, status, BackgroundTasks
 from pydantic import EmailStr
 from core.mail import create_mail_instance
 from schemas.user_schema import DepartmentListRespSchema, UserListRespSchema, UserLoginSchema, UserStatusUpdateSchema
@@ -18,7 +18,7 @@ from repository.user_repo import UserRepo
 from fastapi.exceptions import HTTPException
 from core.auth import AuthHandler
 from schemas.user_schema import UserLoginRespSchema, UserInviteSchema, UserRegisterSchema
-from core.cache import HRCache, InviteInfoSchema
+from core.cache import DingTalkTokenInfoSchema, HRCache, InviteInfoSchema
 from repository.user_repo import DepartmentRepo
 from dependencies import (
     get_cache_instance, 
@@ -28,7 +28,12 @@ from fastapi_mail import FastMail, MessageSchema
 from loguru import logger
 from settings import settings
 from urllib.parse import urlencode, urljoin
+from core.dingtalk import DingTalkApi
+import httpx
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 
+jinja2Engine = Jinja2Templates(directory="templates")
 
 # 通过docs访问的时候，对API进行分组
 router = APIRouter(prefix='/user', tags=['user'])
@@ -301,5 +306,94 @@ async def dingtalk_callback(
     code: str | None = None,
     authCode: str | None = None,
     session: AsyncSession = Depends(get_session_instance),
+    cache: HRCache = Depends(get_cache_instance),
 ):
-    # 
+    """
+    钉钉回调
+    Args:
+        state: 状态
+        code: 授权码
+        authCode: 授权码
+        session: 数据库会话
+        cache: 缓存实例
+    """
+    user_id = state
+    # 1. 获取token
+    async with httpx.AsyncClient() as client:
+        token_resp: httpx.Response = await client.post(
+            url=DingTalkApi.build_access_token_url(),
+            json={
+                "clientId": settings.DINGTALK_APP_KEY,
+                "clientSecret": settings.DINGTALK_APP_SECRET,
+                "code": authCode,
+                "grantType": "authorization_code"
+            }
+        )
+
+        if token_resp.status_code != 200:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="钉钉Token获取失败！")
+        token_data = token_resp.json()
+        # print(token_data)
+        access_token = token_data["accessToken"]
+        refresh_token = token_data["refreshToken"]
+        # 2. 存储token
+        await cache.set_dingtalk_info(DingTalkTokenInfoSchema(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user_id=user_id
+        ))
+
+        # 3. 利用token获取用户的信息
+        my_info_resp = await client.get(
+            url=DingTalkApi.build_get_my_info_url(),
+            headers={
+                "x-acs-dingtalk-access-token": access_token,
+            }
+        )
+        
+        if my_info_resp.status_code != 200:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="钉钉个人信息获取失败！")
+        my_info = my_info_resp.json()
+        # print(my_info)
+        nick = my_info["nick"]
+        mobile = my_info["mobile"]
+        open_id = my_info["openId"]
+        union_id = my_info["unionId"]
+
+        async with session.begin():
+            user_repo = UserRepo(session)
+            await user_repo.set_dingding_user(
+                user_id=user_id,
+                dingding_user_data={
+                "nick": nick,
+                "mobile": mobile,
+                "open_id": open_id,
+                "union_id": union_id,
+            })
+    # 跳转到成功的页面
+    return RedirectResponse(url=rf"/user/dingtalk/authorize/success?nick={nick}")
+
+@router.get('/dingtalk/authorize/success', summary='钉钉授权成功')
+async def dingtalk_authorize_success(
+    nick: str,
+    request: Request,
+):
+    return jinja2Engine.TemplateResponse(
+        "ding_authorize_success.html",
+        {
+            "username": nick,
+            "request": request,
+        },
+    )
+
+@router.get('/dingtalk/account', summary='获取钉钉账号信息')
+async def dingtalk_account(
+    session: AsyncSession = Depends(get_session_instance),
+    current_user: UserModel = Depends(get_current_user),
+):
+    async with session.begin():
+        user_repo = UserRepo(session)
+        dingding_user = await user_repo.get_dingding_user(current_user.id)
+    return {
+        "dingding_user": dingding_user
+    }

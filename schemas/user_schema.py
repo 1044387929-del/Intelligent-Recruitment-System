@@ -69,6 +69,9 @@ class UserInviteSchema(BaseModel):
     department_id: str = Field(..., description="部门ID")
 
 class UserRegisterSchema(BaseModel):
+    """
+    用户注册信息
+    """
     email: EmailStr = Field(..., description="邮箱")
     invite_code: str = Field(..., min_length=6, max_length=6, description='邀请码')
     username: str = Field(..., description="用户名")
@@ -76,15 +79,45 @@ class UserRegisterSchema(BaseModel):
     password: str = Field(..., min_length=6, max_length=20, description="密码")
 
 class UserListRespSchema(BaseModel):
+    """
+    用户列表响应信息
+    """
     users: List[UserSchema]
 
 class UserStatusUpdateSchema(BaseModel):
+    """
+    用户状态更新信息
+    """
     user_id: str = Field(..., description="用户ID")
     status: UserStatus = Field(..., description="用户状态")
 
 class UserStatusUpdateRespSchema(BaseModel):
+    """
+    用户状态更新响应信息
+    """
     user_id: str = Field(..., description="用户ID")
     status: UserStatus = Field(..., description="用户状态")
 
 class DepartmentListRespSchema(BaseModel):
+    """
+    部门列表响应信息
+    """
     departments: List[DepartmentSchema]
+
+class DingdingUserSchema(BaseModel):
+    """
+    钉钉用户信息
+    """
+    id: str = Field(..., description="钉钉用户ID")
+    nick: str = Field(..., description="钉钉昵称")
+    union_id: str = Field(..., description="钉钉unionID")
+    open_id: str = Field(..., description="钉钉openID")
+    mobile: str = Field(..., description="钉钉手机号")
+    user_id: str = Field(..., description="用户ID")
+    model_config = ConfigDict(from_attributes=True)
+
+class DingdingUserRespSchema(BaseModel):
+    """
+    钉钉用户响应信息
+    """
+    dingding_user: DingdingUserSchema = Field(..., description="钉钉用户信息")
