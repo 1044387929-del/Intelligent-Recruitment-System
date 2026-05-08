@@ -62,8 +62,16 @@ class UserRepo(BaseRepo):
         stmt = select(DingdingUserModel).where(DingdingUserModel.user_id == user_id)
         dingding_user = await self.session.scalar(stmt)
         return dingding_user
-
-
+    
+    async def assign_department(self, hr_id: str, department_ids: List[str]):
+        hr_stmt = select(UserModel).where(UserModel.id == hr_id).options(selectinload(UserModel.managed_departments))
+        hr: UserModel = await self.session.scalar(hr_stmt)
+        if not hr:
+            raise ValueError("分配部门的用户不存在")
+        department_stmt = select(DepartmentModel).where(DepartmentModel.id.in_(department_ids))
+        departments = (await self.session.scalars(department_stmt)).all()
+        hr.managed_departments = departments
+        
 
 class DepartmentRepo(BaseRepo):
     async def create_department(self, department_data: dict) -> DepartmentModel:

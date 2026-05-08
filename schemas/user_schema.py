@@ -121,3 +121,10 @@ class DingdingUserRespSchema(BaseModel):
     钉钉用户响应信息
     """
     dingding_user: DingdingUserSchema = Field(..., description="钉钉用户信息")
+
+class AssignDepartmentSchema(BaseModel):
+    """
+    分配部门信息
+    """
+    hr_id: str = Field(..., description="HR用户ID")
+    department_ids: List[str] = Field(..., description="部门ID列表")

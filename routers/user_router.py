@@ -4,7 +4,7 @@ import string
 from fastapi import APIRouter, Depends, Request, status, BackgroundTasks
 from pydantic import EmailStr
 from core.mail import create_mail_instance
-from schemas.user_schema import DepartmentListRespSchema, UserListRespSchema, UserLoginSchema, UserStatusUpdateSchema
+from schemas.user_schema import AssignDepartmentSchema, DepartmentListRespSchema, DingdingUserRespSchema, UserListRespSchema, UserLoginSchema, UserStatusUpdateSchema
 from schemas import ResponseSchema
 from dependencies import (
     get_session_instance, 
@@ -397,3 +397,24 @@ async def dingtalk_account(
     return {
         "dingding_user": dingding_user
     }
+
+@router.post("/assign/department", summary='分配部门', response_model=ResponseSchema)
+async def assign_department(
+    assign_data: AssignDepartmentSchema,
+    session: AsyncSession = Depends(get_session_instance),
+    super_user: UserModel = Depends(get_super_user),
+):
+    """
+    分配部门
+    Args:
+        assign_data: 分配部门数据
+        session: 数据库会话
+        super_user: 超级用户
+    """
+    async with session.begin():
+        user_repo = UserRepo(session)
+        try:
+            await user_repo.assign_department(hr_id=assign_data.hr_id, department_ids=assign_data.department_ids)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return ResponseSchema()
