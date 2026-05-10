@@ -27,3 +27,6 @@ class PositionSchema(PositionBaseSchema):
 
 class PositionRespSchema(BaseModel):
     position: PositionSchema | None = None
+
+class PositionListRespSchema(BaseModel):
+    positions: List[PositionSchema] = Field(..., description='职位列表')
