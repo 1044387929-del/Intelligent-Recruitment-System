@@ -24,6 +24,7 @@ dependencies = [
     "pywin32>=311",
     "pymupdf>=1.27.2.3",
     "aiofiles>=25.1.0",
+    "python-multipart>=0.0.28",
 ]
 
 [dependency-groups]

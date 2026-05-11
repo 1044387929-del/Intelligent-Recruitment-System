@@ -2,6 +2,7 @@ from fastapi import FastAPI
 # from . import models
 from routers.user_router import router as user_router
 from routers.position_router import router as position_router
+from routers.candidate_router import router as candidate_router
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from contextlib import asynccontextmanager
@@ -44,7 +45,7 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(position_router)
-
+app.include_router(candidate_router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}

@@ -13,3 +13,5 @@ venv/
 tests/*
 
 versions/*
+
+uploads/*

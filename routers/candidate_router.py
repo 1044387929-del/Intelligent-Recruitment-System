@@ -9,6 +9,8 @@ from uuid import uuid4
 import aiofiles
 from core.email_bot.pdf import WordToPdfConverter
 from loguru import logger
+from repository.candidate_repo import ReusmeRepo
+from schemas.candidate_schema import ResumeUploadRespSchema
 
 router = APIRouter(prefix='/candidate', tags=['candidate'])
 
@@ -27,7 +29,6 @@ async def resume_upload(
     Returns:
         ResponseSchema: 响应数据
     """
-
     # 检查文件类型
     # 简历：图片、pdf、word
     allowed_mine_types = [
@@ -46,15 +47,15 @@ async def resume_upload(
     file_extension = os.path.splitext(file.filename)[-1]
     unique_filename = f"{uuid4()}{file_extension}"
     file_path = os.path.join(resume_dir, unique_filename)
-    try:
-        async with aiofiles.open(file_path, mode="wb") as fp:
-            # 文件太大的话，内存可能会不够
+    # try:
+    async with aiofiles.open(file_path, mode="wb") as fp:
+        # 文件太大的话，内存可能会不够
+        content = await file.read(1024)
+        while content:
+            await fp.write(content)
             content = await file.read(1024)
-            while content:
-                await fp.write(content)
-                content = await file.read(1024)
-    finally:
-        await fp.close()
+    # finally:
+        # await fp.close()
     
     # 如果是word文档，那么就转化成pdf
     if file_extension == ".doc" or file_extension == ".docx":
@@ -68,6 +69,8 @@ async def resume_upload(
         except Exception as e:
             logger.error(f"转换失败: {e}")
     
-    # 如果是图片，那么就保存图片
+    # 将简历数据存储到数据库中
     async with session.begin():
-        pass
+        resume_repo = ReusmeRepo(session=session)
+        resume = await resume_repo.create_resume(file_path=file_path, uploader_id=current_user.id)
+    return {"resume": resume}

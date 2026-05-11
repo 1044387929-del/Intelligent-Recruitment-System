@@ -5,6 +5,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Any
+import io
 
 # import io
 # from PIL import Image
