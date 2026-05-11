@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Any
 
-import io
-from PIL import Image
-import pymupdf
+# import io
+# from PIL import Image
+# import pymupdf
 
 # 在Ubuntu上安装libreoffice： sudo apt install -y libreoffice
 
@@ -37,6 +37,15 @@ class WordToPdfConverter:
         soffice_path: Optional[str] = None,
         timeout_seconds: int = 300,
     ) -> None:
+        """
+        初始化转换器
+        Args:
+            word_path: word文档路径
+            output_pdf_path: pdf文档路径
+            prefer_backend: 转换后端
+            soffice_path: libreoffice路径
+            timeout_seconds: 超时时间
+        """
         self.word_path = str(word_path)
         self.output_pdf_path = str(output_pdf_path) if output_pdf_path else None
         self.prefer_backend = prefer_backend
@@ -44,6 +53,17 @@ class WordToPdfConverter:
         self.timeout_seconds = int(timeout_seconds)
 
     async def convert(self) -> WordToPdfResult:
+        """
+        将word文档转换为pdf文档
+        Args:
+            self.word_path: word文档路径
+            self.output_pdf_path: pdf文档路径
+            self.prefer_backend: 转换后端
+            self.soffice_path: libreoffice路径
+            self.timeout_seconds: 超时时间
+        Returns:
+            WordToPdfResult: 转换结果
+        """
         word = Path(self.word_path)
         if not word.exists() or not word.is_file():
             raise WordToPdfError(f"Word file not found: {self.word_path}")
