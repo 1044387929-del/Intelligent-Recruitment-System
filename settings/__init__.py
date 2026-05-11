@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # 前端喝后端的域名
     BACKEND_BASE_URL: str = "https://unlecherously-unrenovative-pok.ngrok-free.dev"
 
+    # 简历上传目录
+    RESUME_DIR: str = os.path.join(BASE_DIR, "upload")
+
     @computed_field
     @property
     def DATABASE_URL(self) -> str:

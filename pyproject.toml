@@ -21,6 +21,9 @@ dependencies = [
     "loguru>=0.7.3",
     "pyngrok>=8.1.2",
     "httpx>=0.28.1",
+    "pywin32>=311",
+    "pymupdf>=1.27.2.3",
+    "aiofiles>=25.1.0",
 ]
 
 [dependency-groups]
