@@ -15,3 +15,4 @@ tests/*
 versions/*
 
 uploads/*
+schemas/my_backend.code-workspace
