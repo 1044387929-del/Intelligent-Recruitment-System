@@ -1,3 +1,9 @@
+"""
+任务模块，用于处理各种任务，比如发送邮件、解析简历等
+发送邮件任务：send_email_task
+注册邀请邮件任务：send_invite_email_task
+解析简历任务：ocr_parse_resume_task
+"""
 from fastapi_mail import FastMail, MessageSchema
 from aiosmtplib import SMTPResponseException
 from loguru import logger
@@ -73,6 +79,7 @@ async def ocr_parse_resume_task(
         contents = await paddle_ocr.fetch_parsed_contents(jsonl_url)
         content = "\n\n".join(contents)
         # TODO：将content丢给大模型，让大模型识别其中的内容，比如姓名，性别，年龄、技能、教育经历、工作经历、项目经历、自我评价、其他信息等
+        
         result = {"content": content}
         await cache.set_task_info(
             TaskInfoSchema(task_id=task_id, status="done", result=result)
