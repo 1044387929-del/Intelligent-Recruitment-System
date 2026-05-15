@@ -54,12 +54,15 @@ class Settings(BaseSettings):
     BACKEND_BASE_URL: str = "https://unlecherously-unrenovative-pok.ngrok-free.dev"
 
     # 简历上传目录
-    RESUME_DIR: str = os.path.join(BASE_DIR, "upload")
+    RESUME_DIR: str = os.path.join(BASE_DIR, "uploads")
+
+    PADDLE_OCR_ACCESS_TOKEN: str = Field(..., validation_alias="PADDLE_OCR_ACCESS_TOKEN")
+
+    DASHSCOPE_API_KEY: str = Field(..., validation_alias="DASHSCOPE_API_KEY")
 
     @computed_field
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql+psycopg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-
 
 settings = Settings()

@@ -9,7 +9,7 @@ import asyncio
 from loguru import logger
 
 import base64
-from langchain.messages import HumanMessage, SystemMessage
+from langchain.messages import HumanMessage, SystemMessage, AIMessage
 from asgiref.sync import sync_to_async
 import io
 import aiofiles
@@ -25,10 +25,9 @@ qwen_ocr_llm = ChatOpenAI(
     temperature=0.1
 )
 
-
-
 class PaddleOcr:
     def __init__(self):
+        # 创建一个http client
         self.job_url = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
         self.access_token = settings.PADDLE_OCR_ACCESS_TOKEN
         self.model_name = "PaddleOCR-VL-1.5"
@@ -42,6 +41,13 @@ class PaddleOcr:
         }
 
     async def create_job(self, file: str) -> str:
+        """
+        创建一个任务
+        Args:
+            file: 文件路径或文件url
+        Returns:
+            job_id: 任务id
+        """
         if file.startswith("http"):
             self.headers["Content-Type"] = "application/json"
             payload = {
@@ -72,6 +78,13 @@ class PaddleOcr:
         return job_id
 
     async def poll_for_state(self, job_id: str) -> str | None:
+        """
+        轮询任务状态
+        Args:
+            job_id: 任务id
+        Returns:
+            jsonl_url: 任务结果url
+        """
         while True:
             async with httpx.AsyncClient() as client:
                 url = f"{self.job_url}/{job_id}"
@@ -102,6 +115,13 @@ class PaddleOcr:
             await asyncio.sleep(2)
 
     async def fetch_parsed_contents(self, jsonl_url: str) -> List[str]:
+        """
+        获取任务结果
+        Args:
+            jsonl_url: 任务结果url
+        Returns:
+            contents: 任务结果
+        """
         contents = []
         async with httpx.AsyncClient() as client:
             jsonl_response = await client.get(jsonl_url)
@@ -118,7 +138,7 @@ class PaddleOcr:
         return contents
 
 
-EXTRACT_CANDIDATE_FROM_RESUME_SYSTEM_PROMPT = """
+EXTRACT_CANDIDATE_FROM_RESUME_SYSTEM_PROMPT: str = """
     你是一位经验丰富的人力资源（HR）专家，擅长从各种格式的简历（如 PDF、Word、图片等文档中提取的文本）中精准、高效地提取关键信息。
     你的任务是仔细分析提供的简历文本，并将其结构化为JSON格式。
 
@@ -148,11 +168,25 @@ class QwenOcr:
         pass
 
     async def convert_pdf_to_image(self, file_path: str) -> io.BytesIO:
+        """
+        将pdf转换为图片
+        Args:
+            file_path: 文件路径
+        Returns:
+            buffer: 图片缓冲区
+        """
         conveter = PDF2ImageConverter()
         buffer = await sync_to_async(conveter.pdf_to_single_compressed_image)(file_path)
         return buffer
 
     async def extract_info_from_resume(self, file_path: str) -> str:
+        """
+        提取简历信息
+        Args:
+            file_path: 文件路径
+        Returns:
+            extracted_text: 提取的文本
+        """
         file_ext = os.path.splitext(file_path)[1].lower()
         if file_ext not in [".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"]:
             raise ValueError(f"Unsupported file extension: {file_ext}")
@@ -172,7 +206,7 @@ class QwenOcr:
             },
             {"type": "text", "text": f"请提取文件中的所有文字信息。"}
         ])
-        ocr_response = await qwen_ocr_llm.ainvoke([ocr_system_msg, ocr_msg])
-        extracted_text = ocr_response.content
+        ocr_response: AIMessage = await qwen_ocr_llm.ainvoke([ocr_system_msg, ocr_msg])
+        # extracted_text: str = ocr_response.content
 
-        return extracted_text
+        return ocr_response.content

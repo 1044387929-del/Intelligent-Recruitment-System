@@ -10,6 +10,7 @@ from pydantic import BaseModel, EmailStr
 from settings import settings
 from fastapi_cache.backends.redis import RedisBackend
 from typing import Optional
+from typing import Literal, Any, ClassVar
 
 class InviteInfoSchema(BaseModel):
     email: EmailStr
@@ -21,9 +22,17 @@ class DingTalkTokenInfoSchema(BaseModel):
     refresh_token: str
     user_id: str
 
+class TaskInfoSchema(BaseModel):
+    task_id: str
+    status: Literal["pending", "done", "failed"]
+    result: dict[str, Any] | None = None
+    error_message: str | None = None
+    task_prefix: str = 'task:'
+
 class HRCache(metaclass=SingletonMeta):
     invite_prefix = 'invite:'
     dingtalk_prefix = 'dingtalk:'
+    task_prefix = 'task:'
 
     def __init__(self):
         # 获取缓存后端
@@ -90,4 +99,19 @@ class HRCache(metaclass=SingletonMeta):
     async def get_dingtalk_info(self, user_id: str):
         key = f"{self.dingtalk_prefix}{user_id}"
         return await self.get(key)
-        
+            
+    async def set_task_info(self, task_info: TaskInfoSchema):
+        """
+        设置任务信息缓存
+        """
+        key = f"{self.task_prefix}{task_info.task_id}"
+        # 60分钟过期
+        await self.set(key, task_info.model_dump_json(), ex=60*60)
+
+    async def get_task_info(self, task_id: str) -> TaskInfoSchema | None:
+        key = f"{self.task_prefix}{task_id}"
+        task_json = await self.get(key)
+        if task_json is not None:
+            task_info = TaskInfoSchema.model_validate_json(task_json)
+            return task_info
+        return None
