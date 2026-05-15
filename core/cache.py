@@ -11,6 +11,7 @@ from settings import settings
 from fastapi_cache.backends.redis import RedisBackend
 from typing import Optional
 from typing import Literal, Any, ClassVar
+from schemas.agent_schema import AgentCandidateSchema
 
 class InviteInfoSchema(BaseModel):
     email: EmailStr
@@ -25,7 +26,7 @@ class DingTalkTokenInfoSchema(BaseModel):
 class TaskInfoSchema(BaseModel):
     task_id: str
     status: Literal["pending", "done", "failed"]
-    result: dict[str, Any] | None = None
+    result: AgentCandidateSchema | None = None
     error_message: str | None = None
     task_prefix: str = 'task:'
 
