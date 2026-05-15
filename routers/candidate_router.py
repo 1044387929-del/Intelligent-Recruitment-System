@@ -10,7 +10,7 @@ import aiofiles
 from core.pdf import WordToPdfConverter
 from loguru import logger
 from repository.candidate_repo import ReusmeRepo
-from schemas.candidate_schema import ResumeParseSchema, ResumeUploadRespSchema, ResumeParseRespSchema
+from schemas.candidate_schema import ResumeParseSchema, ResumeParseTaskInfoRespSchema, ResumeUploadRespSchema, ResumeParseRespSchema
 from core.ocr import PaddleOcr, QwenOcr
 from tasks import ocr_parse_resume_task
 from core.cache import HRCache
@@ -103,7 +103,8 @@ async def parse_resume(
     background_tasks.add_task(ocr_parse_resume_task, resume_id=resume_data.resume_id, task_id=task_id)
     return {"task_id": task_id}
 
-@router.get("/resume/parse/{task_id}", summary='获取简历解析状态')
+@router.get("/resume/parse/{task_id}", summary='获取简历解析状态', 
+response_model=ResumeParseTaskInfoRespSchema)
 async def get_task_status(
     task_id: str,
     cache: HRCache = Depends(get_cache_instance),

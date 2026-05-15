@@ -2,12 +2,12 @@ from fastapi_mail import FastMail, MessageSchema
 from aiosmtplib import SMTPResponseException
 from loguru import logger
 from core.mail import create_mail_instance
-from models import AsyncSessionFactory, AsyncSession
+from models import AsyncSessionFactory
 from repository.candidate_repo import ReusmeRepo
 from models.candidate import ResumeModel
 import os
 from settings import settings
-from core.ocr import PaddleOcr, QwenOcr
+from core.ocr import PaddleOcr
 from core.cache import HRCache, TaskInfoSchema
 
 async def send_email_task(message: MessageSchema):
@@ -51,13 +51,21 @@ async def ocr_parse_resume_task(
     async with AsyncSessionFactory() as session:
         async with session.begin():
             resume_repo = ReusmeRepo(session=session)
-            resume: ResumeModel = await resume_repo.get_resume_by_id(resume_id)
-    file_path = os.path.join(settings.RESUME_DIR, resume.file_path)
-    # file_path = os.path.join(BASE_DIR, "uploads", "753a9a92-4c0c-45cd-a9bd-1339ba976653.pdf")
-    
+            resume: ResumeModel | None = await resume_repo.get_resume_by_id(resume_id)
+
+    if not resume:
+        logger.warning("ocr_parse_resume_task: resume_id={} 不存在，跳过", resume_id)
+        return
+
+    # 上传时可能写入绝对路径；若路径失效则用 RESUME_DIR + 文件名兜底
+    stored = resume.file_path
+    if os.path.isfile(stored):
+        file_path = stored
+    else:
+        file_path = os.path.join(settings.RESUME_DIR, os.path.basename(stored))
+
     cache: HRCache = HRCache()
     await cache.set_task_info(TaskInfoSchema(task_id=task_id, status="pending"))
-    # 1. 设置当前的状态为pedding，任务的执行状态和过程中的数据可以存放在redis中
     try:
         paddle_ocr = PaddleOcr()
         job_id = await paddle_ocr.create_job(file_path)
@@ -66,8 +74,18 @@ async def ocr_parse_resume_task(
         content = "\n\n".join(contents)
         # TODO：将content丢给大模型，让大模型识别其中的内容，比如姓名，性别，年龄、技能、教育经历、工作经历、项目经历、自我评价、其他信息等
         result = {"content": content}
-        await cache.set_task_info(task_id=task_id, status="done", result=result)
+        await cache.set_task_info(
+            TaskInfoSchema(task_id=task_id, status="done", result=result)
+        )
     except Exception as e:
-        # 3. 如果出现了异常，就把状态设置failed
-        await cache.set_task_info(task_id=task_id, status="failed", error=str(e))
+        try:
+            await cache.set_task_info(
+                TaskInfoSchema(
+                    task_id=task_id,
+                    status="failed",
+                    error_message=str(e),
+                )
+            )
+        except Exception:
+            logger.exception("写入任务失败状态到缓存时出错")
         
