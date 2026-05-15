@@ -6,31 +6,15 @@
 """
 from core.single import SingletonMeta
 from fastapi_cache import FastAPICache
-from pydantic import BaseModel, EmailStr
 from settings import settings
 from fastapi_cache.backends.redis import RedisBackend
 from typing import Optional
-from typing import Literal, Any, ClassVar
-from schemas.agent_schema import AgentCandidateSchema
-
-class InviteInfoSchema(BaseModel):
-    email: EmailStr
-    department_id: str
-    invite_code: str
-
-class DingTalkTokenInfoSchema(BaseModel):
-    access_token: str
-    refresh_token: str
-    user_id: str
-
-class TaskInfoSchema(BaseModel):
-    task_id: str
-    status: Literal["pending", "done", "failed"]
-    result: AgentCandidateSchema | None = None
-    error_message: str | None = None
-    task_prefix: str = 'task:'
+from schemas.cache_schema import InviteInfoSchema, DingTalkTokenInfoSchema, TaskInfoSchema
 
 class HRCache(metaclass=SingletonMeta):
+    """
+    缓存类，用于缓存数据，提高性能
+    """
     invite_prefix = 'invite:'
     dingtalk_prefix = 'dingtalk:'
     task_prefix = 'task:'

@@ -1,9 +1,9 @@
 import os
 from langchain_openai import ChatOpenAI
 import dotenv
-dotenv.load_dotenv(r'settings/setting.env')
+dotenv.load_dotenv(r'../settings/setting.env')
 
-api_key = os.getenv("DEEPSEEK_API_KEY")
+api_key = os.getenv("DASHSCOPE_API_KEY")
 qwen_llm = ChatOpenAI(
     model="qwen3-max",
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",

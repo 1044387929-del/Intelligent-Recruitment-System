@@ -1,18 +1,18 @@
 from langchain.agents import create_agent
-from llms import qwen_llm, deepseek_llm
+from .llms import qwen_llm, deepseek_llm
 from langchain.agents.middleware import ModelFallbackMiddleware
-from prompts import EXTRACT_CANDIDATE_SYSTEM_PROMPT
+from .prompts import EXTRACT_CANDIDATE_SYSTEM_PROMPT
 from schemas.agent_schema import AgentCandidateSchema
 
 agent = create_agent(
-    llm=qwen_llm,
+    model=qwen_llm,
     # 如果qwen_llm解析失败，则使用deepseek_llm解析
-    middleware=[ModelFallbackMiddleware(llm=deepseek_llm)],
+    middleware=[ModelFallbackMiddleware(deepseek_llm)],
     system_prompt=EXTRACT_CANDIDATE_SYSTEM_PROMPT,
     response_format=AgentCandidateSchema,
 )
 
-async def extract_candidate(content: str) -> AgentCandidateSchema:
+async def extract_candidate_info(content: str) -> AgentCandidateSchema:
     """
     解析简历内容，返回候选人信息
     """
