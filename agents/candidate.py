@@ -382,7 +382,60 @@ async def confirm_interview_time(
     * 在系统中修改面试候选人状态为待面试成功
     """
 
+@tool
+async def reject_interview(
+    runtime: ToolRuntime[CandidateAgentState],
+):
+    """
+    拒绝面试，这个工具会做以下几件事情：
+    * 通过邮件，发送拒绝面试的邮件给候选人
+    * 在系统中修改候选人的状态为已拒绝
+    :param runtime: 运行时状态
+    :return: 拒绝面试成功
+    """
+    candidate: CandidateSchema = runtime.state['candidate']
+    # position: PositionSchema = runtime.state['position']
+    try:
+        async with AsyncSessionFactory() as session:
+            async with session.begin():
+                candidate_repo = CandidateRepo(session)
+                await candidate_repo.update_candidate_status(
+                    candidate_id=candidate.id,
+                    status=CandidateStatusEnum.REFUSED_INTERVIEW,
+                )
+        return f"已经将候选人的状态修改为已拒绝！"
+    except Exception as e:
+        return f"在系统中修改候选人的状态为已拒绝失败，错误信息为：{e}"
 
+@tool
+async def get_current_time(
+    runtime: ToolRuntime[CandidateAgentState],
+):
+    """
+    获取当前时间，返回格式为：2026年5月16日 10:00:00 星期一（本月第16天）
+    :param runtime: 运行时状态
+    :return: 当前时间
+    """
+    now_bj = datetime.now()
+
+    weekday_map = {
+        0: "星期一",
+        1: "星期二",
+        2: "星期三",
+        3: "星期四",
+        4: "星期五",
+        5: "星期六",
+        6: "星期日",
+    }
+
+    weekday_cn = weekday_map.get(now_bj.weekday(), "星期日")
+
+    day_of_month = now_bj.day
+    return (
+        f"{now_bj.year}年{now_bj.month}月{now_bj.day}日"
+        f"{now_bj.hour:02d}:{now_bj.minute:02d}:{now_bj.second:02d}"
+        f"{weekday_cn}（本月第{day_of_month}天）"
+    )
 
 class CandidateProcessAgent:
     def __init__(self, 
@@ -421,6 +474,8 @@ class CandidateProcessAgent:
                 get_interviewer_available_slot, 
                 send_interview_email,
                 confirm_interview_time,
+                reject_interview,
+                get_current_time,
                 ],
             # 使用postgres作为检查点
             checkpointer=self.checkpointer
