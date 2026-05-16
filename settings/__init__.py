@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     DB_HOST: str = Field(..., validation_alias="DB_HOST")
     DB_PORT: int = Field(..., validation_alias="DB_PORT")
     DB_NAME: str = Field(..., validation_alias="DB_NAME")
+    DB_AGENT_NAME: str = Field(..., validation_alias="DB_NAME")
+
 
     JWT_SECRET_KEY: str = "sfsdfsadfsdfjgafsd"
     JWT_ACCESS_TOKEN_EXPIRES: timedelta = timedelta(days=365)
@@ -64,5 +66,10 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql+psycopg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+    
+    @computed_field
+    @property
+    def DATABASE_AGENT_URL(self) -> str:
+        return f"postgresql+psycopg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_AGENT_NAME}"
 
 settings = Settings()

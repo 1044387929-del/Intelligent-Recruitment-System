@@ -3,18 +3,20 @@ from dependencies import get_current_user, get_session_instance
 from models import AsyncSession
 from fastapi import UploadFile, File
 from models.user import UserModel
+from schemas import ResponseSchema
 from settings import settings, BASE_DIR
 import os
 from uuid import uuid4
 import aiofiles
 from core.pdf import WordToPdfConverter
 from loguru import logger
-from repository.candidate_repo import ReusmeRepo
+from repository.candidate_repo import ReusmeRepo, CandidateRepo
 from schemas.candidate_schema import ResumeParseSchema, ResumeParseTaskInfoRespSchema, ResumeUploadRespSchema, ResumeParseRespSchema
 from core.ocr import PaddleOcr, QwenOcr
 from tasks import ocr_parse_resume_task
 from core.cache import HRCache
 from dependencies import get_cache_instance
+from schemas.candidate_schema import CandidateCreateSchema
 
 router = APIRouter(prefix='/candidate', tags=['candidate'])
 
@@ -120,6 +122,28 @@ async def get_task_status(
     """
     task_info = await cache.get_task_info(task_id)
     return task_info.model_dump()
+
+@router.post("/create", summary='创建候选人')
+async def create_candidate(
+    candidate_data: CandidateCreateSchema,
+    session: AsyncSession = Depends(get_session_instance),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    创建候选人
+    Args:
+        candidate_data: 候选人数据
+        session: 数据库会话
+        current_user: 当前用户
+    Returns:
+        dict: 候选人ID
+    """
+    async with session.begin():
+        candidate_dict = candidate_data.model_dump()
+        candidate_dict['creator_id'] = current_user.id
+        candidate_repo = CandidateRepo(session=session)
+        candidate = await candidate_repo.create_candidate(candidate_data=candidate_dict)
+    return ResponseSchema()
 
 @router.get("/resume/ocr/test")
 async def resume_ocr_test():

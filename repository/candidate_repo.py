@@ -1,6 +1,7 @@
 from . import BaseRepo
 from models.candidate import ResumeModel
 from sqlalchemy import select
+from models.candidate import CandidateModel
 
 class ReusmeRepo(BaseRepo):
     async def create_resume(self, file_path: str, uploader_id: str) -> ResumeModel:
@@ -13,3 +14,9 @@ class ReusmeRepo(BaseRepo):
         stmt = select(ResumeModel).where(ResumeModel.id == resume_id)
         resume = await self.session.scalar(stmt)
         return resume
+    
+class CandidateRepo(BaseRepo):
+    async def create_candidate(self, candidate_data: dict) -> CandidateModel:
+        candidate = CandidateModel(**candidate_data)
+        self.session.add(candidate)
+        return candidate
