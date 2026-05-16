@@ -16,3 +16,17 @@ class AgentCandidateSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class AgentCandidateScoreSchema(BaseModel):
+    """
+    AI评分结果
+    """
+    # 工作经历评分，1-10分
+    work_experience_score: int = Field(..., description="工作经历评分",ge=1, le=10)
+    technical_skills_score: int = Field(..., description="技术技能评分",ge=1, le=10)
+    soft_skills_score: int = Field(..., description="软技能评分",ge=1, le=10)
+    educational_background_score: int = Field(..., description="教育背景评分",ge=1, le=10)
+    project_experience_score: int = Field(..., description="项目经验评分",ge=1, le=10)
+    overall_score: int = Field(..., description="总评分",ge=1, le=10)
+    summary: str = Field(..., description="总结")
+    strengths: list[str] = Field(..., description="优势")
+    weaknesses: list[str] = Field(..., description="劣势")
