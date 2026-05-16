@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     ## 邮箱是否启用SSL
     MAIL_SSL_TLS: bool = False
 
+    # 邮箱机器人配置
+    EMAIL_BOT_IMAP_HOST: str = "imap.qq.com"
+    EMAIL_BOT_SMTP_HOST: str = "smtp.qq.com"
+    EMAIL_BOT_EMAIL: str = Field(..., validation_alias="MAIL_USERNAME")
+    EMAIL_BOT_PASSWORD: str = Field(..., validation_alias="MAIL_PASSWORD")
+
     # 钉钉相关配置
     DINGTALK_APP_KEY: str = Field(..., validation_alias="DINGTALK_APP_KEY")
     DINGTALK_APP_SECRET: str = Field(..., validation_alias="DINGTALK_APP_SECRET")
