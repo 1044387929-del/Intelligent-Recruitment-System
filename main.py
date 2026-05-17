@@ -10,6 +10,7 @@ from redis import asyncio as aioredis
 from settings import settings
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache import FastAPICache
+from scheduler import start_email_polling
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -27,10 +28,15 @@ async def lifespan(_: FastAPI):
     # 初始化缓存
     cache_backend = RedisBackend(redis_client)
     FastAPICache.init(cache_backend, prefix='fastapi-cache')
+    bot, scheduler = await start_email_polling()
     yield
     # 程序即将退出之前执行逻辑
     await redis_client.close()
+    if bot.is_connected:
+        await bot.close()
 
+    if scheduler.running:
+        scheduler.shutdown()
 
 app = FastAPI(lifespan=lifespan)
 

@@ -44,6 +44,9 @@ class EmailBot:
         await self.close()
 
     async def connect(self) -> None:
+        """
+        连接IMAP和SMTP服务器
+        """
         await self._imap.connect()
         await self._imap.login(self.settings.email, self.settings.password)
         await self._imap.select(self.settings.imap_mailbox)
@@ -53,15 +56,24 @@ class EmailBot:
         self.is_connected = True
 
     async def close(self) -> None:
+        """
+        关闭IMAP和SMTP服务器
+        """
         await self._imap.logout()
         await self._smtp.quit()
         self.is_connected = False
 
     async def _ensure_connected(self) -> None:
+        """
+        确保IMAP和SMTP服务器已连接
+        """
         if not self.is_connected:
             await self.connect()
 
     async def fetch_latest(self, *, limit: int | None = None, criteria: str = "ALL") -> list[ParsedEmail]:
+        """
+        获取最新的邮件
+        """
         await self._ensure_connected()
         limit = limit or self.settings.default_fetch_limit
         uids = await self._imap.get_latest_uids(limit=limit, criteria=criteria)
@@ -69,6 +81,9 @@ class EmailBot:
         return [parse_email(uid, msg) for uid, msg in pairs]
 
     async def fetch_since_uid(self, last_uid: int, *, criteria: str = "ALL") -> list[ParsedEmail]:
+        """
+        获取自上次UID以来的邮件
+        """
         await self._ensure_connected()
         # Using UID SEARCH with a range.
         # Example: UID 123:*  (inclusive)
@@ -81,6 +96,9 @@ class EmailBot:
         return [parse_email(uid, msg) for uid, msg in pairs]
 
     async def get_max_uid(self) -> int | None:
+        """
+        Get the maximum UID from the server.
+        """
         await self._ensure_connected()
         return await self._imap.get_max_uid()
 
@@ -93,6 +111,9 @@ class EmailBot:
         html: str | None = None,
         cc: str | list[str] | None = None,
     ) -> None:
+        """
+        Send an email.
+        """
         await self._ensure_connected()
         msg = EmailMessage()
         msg["From"] = self.settings.email
@@ -114,6 +135,9 @@ class EmailBot:
             await self._smtp.send_message(msg)  # Retry once
 
     async def _reconnect_smtp(self):
+        """
+        Reconnect to the SMTP server.
+        """
         logger.info("Reconnecting SMTP client...")
         await self._smtp.quit()  # Gracefully close old connection if possible
         await self._smtp.connect()

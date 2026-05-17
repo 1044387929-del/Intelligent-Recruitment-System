@@ -18,6 +18,7 @@ class HRCache(metaclass=SingletonMeta):
     invite_prefix = 'invite:'
     dingtalk_prefix = 'dingtalk:'
     task_prefix = 'task:'
+    email_last_uid_key = 'email:last_uid'
 
     def __init__(self):
         # 获取缓存后端
@@ -103,3 +104,17 @@ class HRCache(metaclass=SingletonMeta):
             task_info = TaskInfoSchema.model_validate_json(task_json)
             return task_info
         return None
+
+    async def set_email_last_uid(self, last_uid: int, *, ex: int | None = None) -> None:
+        await self.set(self.email_last_uid_key, str(int(last_uid)), ex=ex or 0)
+
+    async def get_email_last_uid(self) -> int | None:
+        value = await self.get(self.email_last_uid_key)
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except TypeError:
+            return None
+        except ValueError:
+            return None
