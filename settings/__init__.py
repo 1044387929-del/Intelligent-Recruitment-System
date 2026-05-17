@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def DATABASE_AGENT_URL(self) -> str:
-        return f"postgresql+psycopg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_AGENT_NAME}"
+        # LangGraph AsyncPostgresSaver 使用 psycopg 原生连接，需 postgresql:// 而非 SQLAlchemy 的 postgresql+psycopg://
+        return f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_AGENT_NAME}"
 
 settings = Settings()

@@ -1,22 +1,36 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from dependencies import get_current_user, get_session_instance
-from models import AsyncSession
-from fastapi import UploadFile, File
-from models.user import UserModel
-from schemas import ResponseSchema
-from settings import settings, BASE_DIR
 import os
 from uuid import uuid4
+
 import aiofiles
-from core.pdf import WordToPdfConverter
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, UploadFile, File
 from loguru import logger
+
+from repository.user_repo import UserRepo
+from schemas.user_schema import UserSchema
+from settings import settings, BASE_DIR
+from models import AsyncSession
+from models.user import UserModel
+
+from schemas import ResponseSchema
+from schemas.candidate_schema import (
+    CandidateSchema,
+    ResumeParseSchema,
+    ResumeParseTaskInfoRespSchema,
+    ResumeUploadRespSchema,
+    ResumeParseRespSchema,
+    CandidateCreateSchema,
+)
+from schemas.position_schema import PositionSchema
 from repository.candidate_repo import ReusmeRepo, CandidateRepo
-from schemas.candidate_schema import ResumeParseSchema, ResumeParseTaskInfoRespSchema, ResumeUploadRespSchema, ResumeParseRespSchema
+from repository.position_repo import PositionRepo
+
+from core.pdf import WordToPdfConverter
 from core.ocr import PaddleOcr, QwenOcr
-from tasks import ocr_parse_resume_task
 from core.cache import HRCache
-from dependencies import get_cache_instance
-from schemas.candidate_schema import CandidateCreateSchema
+
+from dependencies import get_current_user, get_session_instance, get_cache_instance
+
+from tasks import ocr_parse_resume_task, run_candidate_agent
 
 router = APIRouter(prefix='/candidate', tags=['candidate'])
 
@@ -159,3 +173,25 @@ async def resume_ocr_test():
     extracted_text = await paddle_ocr.fetch_parsed_contents(jsonl_url)
     logger.info(f"extracted_text: {extracted_text}")
     return "success"
+
+@router.get("/agent/test")
+async def agent_test(
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session_instance),
+):
+    async with session.begin():
+        candidate_repo = CandidateRepo(session=session)
+        position_repo = PositionRepo(session=session)
+        user_repo = UserRepo(session=session)
+
+        candidate_model = await candidate_repo.get_by_id(candidate_id="23TMXwjzuse8kBP4dRMCQv")
+        position_model = await position_repo.get_position_by_id(position_id="YqDxVb44xdAPCa3y2YYS25")
+        interviewer_model = await user_repo.get_by_id(user_id="N8yXjbkEvswu5ZXTrzRLNw")
+
+        background_tasks.add_task(
+            run_candidate_agent,
+            candidate=CandidateSchema.model_validate(candidate_model),
+            position=PositionSchema.model_validate(position_model),
+            interviewer=UserSchema.model_validate(interviewer_model),
+        )
+        return {"result": "success"}

@@ -4,19 +4,26 @@
 注册邀请邮件任务：send_invite_email_task
 解析简历任务：ocr_parse_resume_task
 """
+from uuid import uuid4
+
 from fastapi_mail import FastMail, MessageSchema
 from aiosmtplib import SMTPResponseException
+from langchain_core.messages import HumanMessage
+from schemas.position_schema import PositionSchema
 from loguru import logger
 from core.mail import create_mail_instance
 from models import AsyncSessionFactory
 from repository.candidate_repo import ReusmeRepo
 from models.candidate import ResumeModel
 import os
+from schemas.candidate_schema import CandidateSchema
+from schemas.user_schema import UserSchema
 from settings import settings
 from core.ocr import PaddleOcr
 from core.cache import HRCache, TaskInfoSchema
 from agents.resume import extract_candidate_info
 from schemas.agent_schema import AgentCandidateSchema
+from agents.candidate import CandidateProcessAgent
 
 async def send_email_task(message: MessageSchema):
     """
@@ -97,4 +104,27 @@ async def ocr_parse_resume_task(
             )
         except Exception:
             logger.exception("写入任务失败状态到缓存时出错")
-        
+
+async def run_candidate_agent(
+    candidate: CandidateSchema,
+    position: PositionSchema,
+    interviewer: UserSchema,
+):
+    async with CandidateProcessAgent(
+        candidate=candidate,
+        position=position,
+        interviewer=interviewer,
+    ) as agent:
+        response = await agent.ainvoke(
+            messages=[
+                HumanMessage(
+                    content=(
+                        f"候选人信息: {candidate.model_dump_json()}，"
+                        f"职位信息: {position.model_dump_json()}"
+                    )
+                )
+            ],
+            thread_id=str(uuid4()),
+        )
+    print(response)
+    return response

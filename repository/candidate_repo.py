@@ -50,8 +50,11 @@ class CandidateRepo(BaseRepo):
         """
         更新候选人状态
         """
-        stmt = update(CandidateModel).where(
-        ).values(status=status)
+        stmt = (
+            update(CandidateModel)
+            .where(CandidateModel.id == candidate_id)
+            .values(status=status)
+        )
         return await self.session.execute(stmt)
 
 class CandidateAIScoreRepo(BaseRepo):

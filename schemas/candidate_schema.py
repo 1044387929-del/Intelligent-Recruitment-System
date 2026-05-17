@@ -8,7 +8,9 @@ from .user_schema import UserSchema
 class ResumeSchema(BaseModel):
     id: str = Field(..., description="简历ID")
     file_path: str = Field(..., description="简历文件路径")
-    uploader: str = Field(..., description="上传者ID")
+    uploader: str = Field(..., description="上传者ID", validation_alias="uploader_id")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class ResumeUploadRespSchema(BaseModel):
@@ -55,4 +57,5 @@ class CandidateSchema(BaseModel):
     position: PositionSchema = Field(..., description="候选人投递的职位")
     resume: ResumeSchema = Field(..., description="候选人简历")
     creator: UserSchema = Field(..., description="创建者")
+    
     model_config = ConfigDict(from_attributes=True)

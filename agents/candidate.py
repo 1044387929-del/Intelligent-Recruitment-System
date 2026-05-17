@@ -50,7 +50,7 @@ from core.email_bot import EmailBot, EmailBotSettings
 
 # ========== 项目内部 - Utils ==========
 from utils.available_time import find_available_slot
-from utils.iso8601 import iso8601_to_datetime_beijing
+from utils.iso8601 import iso8601_to_datetime_beijing, datetime_to_iso8601_beijing
 
 async def get_dingtalk_access_token(user_id: str) -> str:
     dingding_http = DingTalkHttp()
@@ -129,7 +129,7 @@ async def score_for_candidate(
             "messages": [
                 {
                     "role": "user",
-                    "content": user_prompt,
+                    "content": user_prompt.text,
                 }
             ]
         }
@@ -159,7 +159,8 @@ async def score_for_candidate(
                     status=status
                 )
             except Exception as e:
-                return f"得分工具执行失败，错误信息为：{e}"
+                raise ValueError(f"得分工具执行失败，错误信息为：{e}")
+                # return f"得分工具执行失败，错误信息为：{e}"
             
     return f"得分工具执行成功！该候选人的AI筛选结果为：{candidate_score.model_dump_json()}"
 
@@ -216,8 +217,10 @@ async def get_interviewer_available_slot(
             )
         if len(available_slots) == 0:
             return f"获取候选人可用面试时间失败，没有可用的时间"
-        available_times = [(iso8601_to_datetime_beijing(slot[0]), iso8601_to_datetime_beijing(slot[1])) 
-        for slot in available_slots]
+        available_times = [
+            (datetime_to_iso8601_beijing(start), datetime_to_iso8601_beijing(end))
+            for start, end in available_slots
+        ]
         return f"获取候选人可用面试时间成功，可用时间为：{json.dumps(available_times)}"
 
     except Exception as e:
@@ -455,9 +458,8 @@ class CandidateProcessAgent:
         assert self.checkpointer is not None, "检查点未初始化"
         agent = create_agent(
             model=qwen_llm,
-            state_schema=AgentCandidateSchema,
-            system_prompt=CANDIDATE_PROCESS_SYSTEM_PROMPT,
             state_schema=CandidateAgentState,
+            system_prompt=CANDIDATE_PROCESS_SYSTEM_PROMPT,
             middleware=[
                 ModelFallbackMiddleware(
                     first_model=deepseek_llm,
@@ -480,13 +482,15 @@ class CandidateProcessAgent:
             # 使用postgres作为检查点
             checkpointer=self.checkpointer
         )
-        response = await agent.invoke({
-            "messages": messages,
-            "candidate": self.candidate,
-        }, 
-        {
-            "thread_id": thread_id,
-        })
+        response = await agent.ainvoke(
+            {
+                "messages": messages,
+                "candidate": self.candidate,
+                "position": self.position,
+                "interviewer": self.interviewer,
+            },
+            {"configurable": {"thread_id": thread_id}},
+        )
         return response
 
     async def __aenter__(self):
