@@ -16,3 +16,7 @@ versions/*
 
 uploads/*
 schemas/my_backend.code-workspace
+
+# frontend
+hr-frontend/node_modules/
+hr-frontend/dist/
